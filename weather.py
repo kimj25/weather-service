@@ -18,7 +18,7 @@ def get_forecast(latitude, longitude, departure, return_date):
     }
 
     try:
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, timeout=30)
         response.raise_for_status()
         return response.json()
     except requests.RequestException:
@@ -44,7 +44,7 @@ def get_historical(latitude, longitude, departure, return_date):
     }
 
     try:
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, timeout=30)
         response.raise_for_status()
         return response.json()
     except requests.RequestException:
@@ -74,13 +74,13 @@ def build_daily_breakdown(data, departure, is_historical=False):
     codes = daily.get("weathercode", [])
 
     breakdown = []
-    for i in range(len(dates)):
+    for i, date in enumerate(dates):
         # if historical, replace last year's date with actual travel date
         if is_historical:
             actual_date = datetime.strptime(departure, "%Y-%m-%d") + timedelta(days=i)
             date_str = actual_date.strftime("%Y-%m-%d")
         else:
-            date_str = dates[i]
+            date_str = date
 
         breakdown.append({
             "date": date_str,
@@ -108,7 +108,7 @@ def get_weather_data(latitude, longitude, departure, return_date):
         data_type = "forecast"
     else:
         # use historical averages
-        print(f"Dates beyond 16 days, fetching historical averages...")
+        print("Dates beyond 16 days, fetching historical averages...")
         data = get_historical(latitude, longitude, departure, return_date)
         is_historical = True
         data_type = "historical"
@@ -133,6 +133,7 @@ def get_weather_data(latitude, longitude, departure, return_date):
 # Main function ZeroMQ
 
 def main ():
+    """Run the ZeroMQ REP server: listen on port 3015 and serve weather requests."""
     context = zmq.Context()
     socket = context.socket(zmq.REP)
     socket.bind("tcp://*:3015")
@@ -146,14 +147,14 @@ def main ():
         print(f"Received: {request}")
 
         # required fields: latitude, longitude, start_date, end_date
-        latitude = request.get("lat")
-        longitude = request.get("lon")
+        latitude = request.get("latitude")
+        longitude = request.get("longitude")
         start_date = request.get("start_date")
         end_date = request.get("end_date")
 
         # if any field is missing, return error
         if latitude is None or longitude is None or not start_date or not end_date:
-            response = {"error": "Missing required fields: lat, lon, start_date, end_date"}
+            response = {"error": "Missing required fields: latitude, longitude, start_date, end_date"}
             socket.send_json(response)
             continue
 
