@@ -6,7 +6,7 @@ import zmq
 
 def get_forecast(latitude, longitude, departure, return_date):
     """Get weather forecast from Open-Meteo API for dates within 16 days."""
-    url = "https://api.open-meteo.com/v1/forecast" # connect to forecast API
+    url = "https://api.open-meteo.com/v1/forecast" # forecast API endpoint
     # set parameters for API request
     params = {
         "latitude": latitude,
@@ -26,7 +26,7 @@ def get_forecast(latitude, longitude, departure, return_date):
 
 def get_historical(latitude, longitude, departure, return_date):
     """Get historical weather averages from Open-Meteo API for dates beyond 16 days."""
-    url = "https://archive-api.open-meteo.com/v1/archive"
+    url = "https://archive-api.open-meteo.com/v1/archive" # historical averages API endpoint
 
     # use same dates from last year for historical averages
     dep = datetime.strptime(departure, "%Y-%m-%d")
@@ -44,7 +44,7 @@ def get_historical(latitude, longitude, departure, return_date):
     }
 
     try:
-        response = requests.get(url, params=params, timeout=30)
+        response = requests.get(url, params=params, timeout=30) # connect to Open-Meteo API with 30 second timeout
         response.raise_for_status()
         return response.json()
     except requests.RequestException:
