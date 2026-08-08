@@ -64,6 +64,17 @@ def parse_weathercode(code):
     }
     return conditions.get(code, "Unknown")
 
+def safe_value(values, index, default=None):
+    """Safely get a list value by index or return a default."""
+    if not isinstance(values, list):
+        return default
+
+    if index >= len(values):
+        return default
+
+    value = values[index]
+    return default if value is None else value
+
 def build_daily_breakdown(data, departure, is_historical=False):
     """Build daily weather breakdown from API response."""
     daily = data.get("daily", {})
@@ -82,12 +93,18 @@ def build_daily_breakdown(data, departure, is_historical=False):
         else:
             date_str = date
 
+        weather_code = safe_value(codes, i)
+
         breakdown.append({
             "date": date_str,
-            "high": highs[i] if highs[i] is not None else "N/A",
-            "low": lows[i] if lows[i] is not None else "N/A",
-            "conditions": parse_weathercode(codes[i]) if codes[i] is not None else "Unknown",
-            "precipitation_mm": precip[i] if precip[i] is not None else 0.0
+            "high": safe_value(highs, i, "N/A"),
+            "low": safe_value(lows, i, "N/A"),
+            "conditions": (
+                parse_weathercode(weather_code)
+                if weather_code is not None
+                else "Unknown"
+            ),
+            "precipitation_mm": safe_value(precip, i, 0.0)
         })
 
     return breakdown

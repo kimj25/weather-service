@@ -73,6 +73,38 @@ def test_build_daily_breakdown_forecast():
     assert breakdown[1]["high"] == "N/A"
     assert breakdown[1]["conditions"] == "Rainy"
 
+def test_build_daily_breakdown_handles_mismatched_array_lengths():
+    """Incomplete API arrays should use defaults instead of raising IndexError."""
+    data = {
+        "daily": {
+            "time": ["2026-08-10", "2026-08-11"],
+            "temperature_2m_max": [25.0],
+            "temperature_2m_min": [15.0, 16.0],
+            "precipitation_sum": [],
+            "weathercode": [0],
+        }
+    }
+
+    breakdown = weather.build_daily_breakdown(data, "2026-08-10")
+
+    assert len(breakdown) == 2
+
+    assert breakdown[0] == {
+        "date": "2026-08-10",
+        "high": 25.0,
+        "low": 15.0,
+        "conditions": "Clear Sky",
+        "precipitation_mm": 0.0,
+    }
+
+    assert breakdown[1] == {
+        "date": "2026-08-11",
+        "high": "N/A",
+        "low": 16.0,
+        "conditions": "Unknown",
+        "precipitation_mm": 0.0,
+    }
+
 
 def test_build_daily_breakdown_historical_uses_actual_dates():
     """Historical responses swap last year's dates for the real travel dates."""
